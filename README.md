@@ -14,7 +14,11 @@ We primarily use the official [OSC Discord](https://discord.gg/qAGudju6) to comm
 ## How to Run
 1. Open Terminal
 2. cd into your TERMINALCASINO folder
-3. Execute the following command to run the program:
+3. Execute the following command to download all build requirements (this is a Python 3.13 project):
+```
+pip install -r requirements.txt
+```
+4. Execute the following command to run the program:
 ```
 python -m casino.main
 ```

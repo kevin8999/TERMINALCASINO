@@ -1,12 +1,56 @@
 import shutil
-from typing import Callable
 
 from . import games
 from .accounts import Account
 from .config import Config
 from .types import GameContext
 from .utils import cprint, cinput, clear_screen, display_topbar, get_theme
+from typing import Callable
+from textual.app import App, ComposeResult
+from textual.binding import Binding
+from textual.containers import Vertical
+from textual.screen import ModalScreen
+from textual.widgets import Button, Footer, Header, Label
 
+class CasinoApp(App):
+    """Textual app for Terminal Casino."""
+
+    BINDINGS = [("d", "toggle_dark", "Toggle dark mode"), 
+                ("e", "exit_app", "Exit App"),
+                Binding("ctrl+c", "exit_popup", "Exit Popup", show=False)]
+
+    def compose(self) -> ComposeResult:
+        """Create child widgets for the app."""
+        yield Header()
+        yield Footer()
+
+    def action_toggle_dark(self) -> None:
+        """An action to toggle dark mode."""
+        self.theme = (
+            "textual-dark" if self.theme == "textual-light" else "textual-light"
+        )
+
+    def action_exit_app(self) -> None:
+        """An action to exit the app."""
+        self.exit()
+    
+    def action_exit_popup(self) -> None:
+        """Override the native ctrl+c binding popup."""
+        self.push_screen(ExitPopup())
+
+# TODO: clean up the UI, currently extremely rough
+class ExitPopup(ModalScreen):
+    """A simple exit popup"""
+
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label("If you'd like to exit the app, please press \"e\" or click \"Exit App\" in the footer."),
+            Button("Dismiss", id="dismiss")
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "dismiss":
+            self.app.pop_screen()
 
 CASINO_HEADER = """
 ┌──────────────────────────────────────┐
@@ -154,10 +198,13 @@ def main():
 
 
 if __name__ == "__main__":
+    app = CasinoApp()
+    app.run()
+    """ -- OLD MAIN --
     try:
         main()
     except (KeyboardInterrupt, EOFError):
         clear_screen()
         display_topbar(account=None, **CASINO_HEADER_OPTIONS)
         cprint("\nGoodbye! (Interrupted)\n")
-
+    """

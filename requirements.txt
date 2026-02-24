@@ -49,6 +49,7 @@ scikit-image==0.22.0
 scipy==1.12.0
 six==1.16.0
 sympy==1.12
+textual==8.0.0
 tifffile==2024.2.12
 tqdm==4.66.2
 tzdata==2023.3

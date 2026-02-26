@@ -1,55 +1,116 @@
-attrs==23.2.0
-certifi==2024.2.2
-charset-normalizer==3.3.2
+# ============================================
+# Terminal Casino - Requirements
+# ============================================
+# Organized by purpose. See each section for
+# which part of the project uses the package.
+# ============================================
+
+# ------------------------------------------
+# Core Framework (used by all games)
+# ------------------------------------------
+
+# Terminal colors and styled output (casino/utils.py)
 colorama==0.4.6
+
+# Logging
 coloredlogs==15.0.1
-EasyProcess==1.1
-entrypoint2==1.1
-flatbuffers==24.3.25
-humanfriendly==10.0
-idna==3.6
-imageio==2.34.0
-jsonschema==4.21.1
-jsonschema-specifications==2023.12.1
+humanfriendly==10.0      # coloredlogs dependency
+
+# Keyboard input handling
 keyboard==0.13.5
-lazy_loader==0.3
-llvmlite==0.42.0
-MouseInfo==0.1.3
-mpmath==1.3.0
-mss==9.0.1
-networkx==3.2.1
-numba==0.59.1
-numpy==1.26.4
-onnxruntime==1.17.1
-opencv-python-headless==4.9.0.80
-packaging==24.0
-pandas==2.1.1
-Pillow==10.0.1
-platformdirs==4.2.0
-pooch==1.8.1
-protobuf==5.26.1
-PyAutoGUI==0.9.54
-pygame==2.6.1
-PyGetWindow==0.0.9
-PyMatting==1.1.12
-PyMsgBox==1.0.9
-pyperclip==1.8.2
+
+# Windows readline support
 pyreadline3==3.4.1
-PyRect==0.2.0
-pyscreenshot==3.1
-PyScreeze==0.1.29
-python-dateutil==2.8.2
-pytweening==1.0.7
-pytz==2023.3.post1
-referencing==0.34.0
+
+# ------------------------------------------
+# Audio & Game Display
+# ------------------------------------------
+
+# Sound effects and audio (used across all games)
+pygame==2.6.1
+
+# ------------------------------------------
+# Screen Automation (PyAutoGUI + dependencies)
+# ------------------------------------------
+
+PyAutoGUI==0.9.54
+MouseInfo==0.1.3         # PyAutoGUI dependency
+PyGetWindow==0.0.9       # PyAutoGUI dependency
+PyMsgBox==1.0.9          # PyAutoGUI dependency
+PyRect==0.2.0            # PyAutoGUI dependency
+PyScreeze==0.1.29        # PyAutoGUI dependency
+pytweening==1.0.7        # PyAutoGUI dependency
+pyperclip==1.8.2         # PyAutoGUI dependency
+pyscreenshot==3.1        # PyAutoGUI dependency
+mss==9.0.1               # PyAutoGUI dependency
+EasyProcess==1.1         # pyscreenshot dependency
+entrypoint2==1.1         # pyscreenshot dependency
+
+# ------------------------------------------
+# Card Image Processing (casino/card_assets.py)
+# Used by: Blackjack, Poker, UNO (card rendering)
+# ------------------------------------------
+
+# Background removal for card assets
 rembg==2.0.56
-requests==2.31.0
-rpds-py==0.18.0
-scikit-image==0.22.0
+onnxruntime==1.17.1      # rembg dependency
+opencv-python-headless==4.9.0.80  # rembg dependency
+Pillow==10.0.1           # rembg dependency
+PyMatting==1.1.12        # rembg dependency
+scikit-image==0.22.0     # rembg dependency
+imageio==2.34.0          # scikit-image dependency
+lazy_loader==0.3         # scikit-image dependency
+tifffile==2024.2.12      # scikit-image dependency
+pooch==1.8.1             # scikit-image dependency
+
+# Scientific computing (rembg/scikit-image dependencies)
+numpy==1.26.4
 scipy==1.12.0
-six==1.16.0
-sympy==1.12
-tifffile==2024.2.12
-tqdm==4.66.2
-tzdata==2023.3
-urllib3==2.2.1
+numba==0.59.1
+llvmlite==0.42.0         # numba dependency
+networkx==3.2.1          # scikit-image dependency
+
+# Protobuf / ONNX model support
+protobuf==5.26.1         # onnxruntime dependency
+flatbuffers==24.3.25     # onnxruntime dependency
+sympy==1.12              # onnxruntime dependency
+mpmath==1.3.0            # sympy dependency
+
+# ------------------------------------------
+# Data & Statistics
+# ------------------------------------------
+
+# Data handling (casino/stats.py)
+pandas==2.1.1
+python-dateutil==2.8.2   # pandas dependency
+pytz==2023.3.post1       # pandas dependency
+tzdata==2023.3           # pandas dependency
+six==1.16.0              # python-dateutil dependency
+
+# ------------------------------------------
+# Configuration & Validation
+# ------------------------------------------
+
+jsonschema==4.21.1
+jsonschema-specifications==2023.12.1  # jsonschema dependency
+attrs==23.2.0            # jsonschema dependency
+referencing==0.34.0      # jsonschema dependency
+rpds-py==0.18.0          # jsonschema dependency
+
+# ------------------------------------------
+# HTTP & Networking
+# ------------------------------------------
+
+requests==2.31.0
+certifi==2024.2.2        # requests dependency
+charset-normalizer==3.3.2  # requests dependency
+idna==3.6                # requests dependency
+urllib3==2.2.1           # requests dependency
+
+# ------------------------------------------
+# Miscellaneous
+# ------------------------------------------
+
+packaging==24.0
+platformdirs==4.2.0
+tqdm==4.66.2             # Progress bars

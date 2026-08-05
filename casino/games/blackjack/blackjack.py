@@ -155,14 +155,13 @@ class Blackjack(ABC):
 
         # Done: Refactor so that this function works for multiple players
         for player in self.players:
-
             # Kick from casino if player has 0 chips
-            if player.balance == 0:
+            if player.account.balance == 0:
                 clear_screen()
                 cprint("GAME OVER")
                 cprint("You have lost all your chips. Security is escorting you out.")
                 sys.exit()
-            if player.balance < self.MINIMUM_BET:
+            if player.account.balance < self.MINIMUM_BET:
                 cprint(NO_FUNDS_MSG)
                 cinput("Press [Enter] to continue")
                 return "EXIT"
@@ -238,6 +237,7 @@ class StandardBlackjack(Blackjack):
         error_msg = ""
 
         for player in self.players:
+            if player.account.balance < self.MINIMUM_BET:
                 self.view.show_no_funds()
                 continue
 
@@ -248,27 +248,21 @@ class StandardBlackjack(Blackjack):
                 # Check that input is a number
                 try:
                     bet = int(bet_str)
-                    if bet < self.MINIMUM_BET:
-                        error_msg = f"The minimum bet is {self.MINIMUM_BET} chips."
-                        continue
                 except ValueError:
                     error_msg = "Enter a number."
                     continue
 
-                # Check that user has enough money in account to bet
-                try:
-                    player.bet = bet
-                    if player.bet > player.balance:
-                        raise ValueError("Player betting more than their balance")
-
-                    player.balance -= bet
-                    player.hands = [Hand(bet=bet)] #initialize player hand
-                    player.update_account()
-                    error_msg = ""#clear error message
-
-                except ValueError:
-                    error_msg = f"Insufficient funds. You only have {player.balance} chips."
+                if bet < self.MINIMUM_BET:
+                    error_msg = f"The minimum bet is {self.MINIMUM_BET} chips."
                     continue
+                elif bet > player.account.balance:
+                    error_msg = f"Insufficient funds. You only have {player.account.balance} chips."
+                    continue
+                
+                player.bet = bet
+                player.account.balance -= bet
+                player.hands = [Hand(bet=bet)]
+                error_msg = ""
                 break
 
     #step 2 of 8
@@ -334,13 +328,17 @@ class StandardBlackjack(Blackjack):
 
                     allowed_actions = {"S", "STAND", "H", "HIT"}
                     options_str = "[S]tand   [H]it"
-                    can_double = len(hand.cards) == 2 and player.balance >= hand.bet
+
+                    can_double = len(hand.cards) == 2 and player.account.balance >= hand.bet
                     if can_double:
                         allowed_actions.update({"D", "DOUBLE"})
                         options_str += "   [D]ouble"
-                    can_split = (len(hand.cards) == 2 and
-                                 card_val(hand.cards[0]) == card_val(hand.cards[1]) and
-                                 player.balance >= hand.bet)
+
+                    can_split = (
+                        len(hand.cards) == 2 and
+                        card_val(hand.cards[0]) == card_val(hand.cards[1]) and
+                        player.account.balance >= hand.bet
+                    )
                     if can_split:
                         allowed_actions.update({"P", "SPLIT"})
                         options_str += "   s[P]lit"
@@ -366,7 +364,7 @@ class StandardBlackjack(Blackjack):
                             sleep(1.0)
                             break
                     elif action in {"D", "DOUBLE"}:
-                        player.balance -= hand.bet
+                        player.account.balance -= hand.bet
                         hand.bet *= 2
                         self.deal_card(hand) 
                         player.update_account()
@@ -375,7 +373,8 @@ class StandardBlackjack(Blackjack):
                         sleep(1.0)
                         break
                     elif action in {"P", "SPLIT"}:
-                        player.balance -= hand.bet
+                        player.account.balance -= hand.bet
+
                         hand.is_split_hand = True
                         new_hand = Hand(bet=hand.bet, is_split_hand=True)
                         new_hand.cards.append(hand.cards.pop())
@@ -466,8 +465,7 @@ class StandardBlackjack(Blackjack):
         """
         for player in self.players:
             for hand in player.hands:
-                player.balance += hand.payout_amount
-            player.update_account()
+                player.account.balance += hand.payout_amount
 
     #step 8 of 8
     def display_results(self) -> None:

@@ -447,8 +447,11 @@ class StandardBlackjack(Blackjack):
                     result = "tie"
                 elif hand.total < dealer_total:
                     result = "dealer_wins"
-                else:  # dealer_total < hand_total:
+                elif dealer_total < hand_total:
                     result = "player_wins"
+                else:
+                    raise ValueError(f"Invalid game result. result = {result}")
+
                 self.update_hand_results(hand, result)
 
                 if player == primary_player:

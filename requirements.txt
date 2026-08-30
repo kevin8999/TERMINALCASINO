@@ -1,1 +1,16 @@
 pytest
+
+# Documentation
+click==8.5.0
+deepmerge==3.0
+Jinja2==3.1.6
+Markdown==3.10.3
+MarkupSafe==3.0.3
+packaging==26.3
+Pygments==2.21.0
+pymdown-extensions==11.0.2
+PyYAML==6.0.3
+setuptools==84.0.0
+tomli==2.4.1
+wheel==0.48.0
+zensical==0.0.57

@@ -1,4 +1,5 @@
-from casino.games.blackjack.blackjack import *
+from casino.games.blackjack.base import *
+from casino.games.blackjack.variants.standard import *
 from casino.game_types import *
 
 #Add more tests as needed, potentially testing user inputs

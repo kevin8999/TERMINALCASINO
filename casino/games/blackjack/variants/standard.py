@@ -1,224 +1,11 @@
-import random
-import sys
-from typing import Optional, List
-from abc import ABC, abstractmethod
 from time import sleep
 
-from casino.cards import StandardCard, StandardDeck, Card
 from casino.stats import GameStats, display_stats
 from casino.types import GameContext
-from casino.accounts import Account
-from casino.utils import clear_screen, cprint, cinput, display_topbar, print_cards
-from .constants import *
-from .hand import Hand
-
-
-class Player:
-    """
-    Defines a player in a blackjack game.
-    """
-
-    def __init__(self, account: Account) -> None:
-        self.hands: list[Hand] = []
-
-        self.account = account
-        self.name = account.name
-
-
-class BlackjackView:
-    """
-    Owns all terminal rendering and user input for a Blackjack game.
-
-    Game/round logic should never call cinput/cprint/sleep directly —
-    it should ask this class to do it.
-    """
-
-    def __init__(self, context) -> None:
-        self.context = context
-
-    def display_topbar(self, players: list) -> None:
-        if len(players) <= 1:
-            display_topbar(self.context.account, **BLACKJACK_HEADER_OPTIONS)
-            return
-
-        header = BLACKJACK_HEADER_OPTIONS.get("header", "")
-        margin = BLACKJACK_HEADER_OPTIONS.get("margin", 1)
-        cprint(header)
-        header_lines = header.splitlines()
-        header_width = max(len(line) for line in header_lines if line.strip())
-        info = "  |  ".join(f"👤 {p.name} 💰 {p.balance}" for p in players)
-        cprint(info.center(header_width))
-        print("\n" * margin, end="")
-
-    def render_table(self, players: list, dealer_hand, current_player=None,
-                      active_hand_idx: int = 0) -> None:
-        clear_screen()
-        self.display_topbar(players)
-        dealer_hand.print_hand(label="Dealer's Hand")
-        cprint("=" * 40)
-        for player in players:
-            num_hands = len(player.hands)
-            for idx, hand in enumerate(player.hands):
-                is_active = (player == current_player and idx == active_hand_idx)
-                label = f"{player.name} - Hand {idx + 1}" if num_hands > 1 else player.name
-                hand.print_hand(label=label, is_active=is_active)
-                print()
-
-    def prompt_num_players(self, players_so_far: list) -> int:
-        while True:
-            try:
-                self.view.display_topbar()
-                num = int(cinput("Enter number of Players: ").strip())
-                if 1 <= num <= 4:
-                    return num
-                cprint("Please enter a number between 1 and 4.")
-            except ValueError:
-                cprint("Invalid input. Please enter a number.")
-
-    def prompt_player_name(self, index: int) -> str:
-        return cinput(f"Enter name for Player {index}: ").strip()
-
-    def prompt_bet(self, player, error_msg: str = "") -> str:
-        clear_screen()
-        self.display_topbar([player])
-        if error_msg:
-            cprint(error_msg)
-        return cinput(f"🤵 : {player.name}, how much would you like to bet? ").strip()
-
-    def show_no_funds(self) -> None:
-        clear_screen()
-        self.display_topbar()
-        cprint(NO_FUNDS_MSG)
-        cinput("Press [Enter] to continue.")
-
-    def prompt_action(self, options_str: str) -> str:
-        return cinput(options_str).strip().upper()
-
-    def show_invalid_choice(self) -> None:
-        cprint(INVALID_CHOICE_MSG)
-
-    def announce(self, message: str, pause: float = 0.8) -> None:
-        cprint(message)
-        sleep(pause)
-
-    def prompt_play_again(self) -> str:
-        cprint(STAY_AT_TABLE_PROMPT)
-        return cinput(YES_OR_NO_PROMPT)
-
-
-class Blackjack(ABC):
-    """
-    Abstract base class that sets up Blackjack.
-    
-    To create a variant of blackjack, inherit from this class.
-    All inherited classes must only play one round of that variant of Blackjack
-    """
-    
-    def __init__(self, ctx: GameContext) -> None:
-        self.context = ctx
-        self.configurations = ctx.config
-        self.view = BlackjackView(ctx)
-        shoe_size = self.configurations.blackjack_shoe_size
-        self.deck: StandardDeck = StandardDeck(shoe_size)
-        self.players: list[Player] = self._init_players()
-        self.dealer_hand: Hand = Hand()
-        self.MINIMUM_BET = self.configurations.blackjack_min_bet
-
-    def _init_players(self) -> list[Player]:
-        while True:
-            try:
-                num_str = cinput("Enter number of Players: ").strip()
-                num_players = int(num_str)
-                if 1 <= num_players <= 4:
-                    break
-                cprint("Please enter a number between 1 and 4.")
-            except ValueError:
-                cprint("Invalid input. Please enter a number.")
-        players = []
-        players.append(Player(self.context.account))
-        if num_players > 1:
-            for i in range(2, num_players + 1):
-                name = cinput(f"Enter name for Player {i}: ").strip()
-                if not name:
-                    name = f"Guest {i}"
-                start_bal = self.context.account.balance
-                guest_account = Account.generate(name=name, balance=start_bal)
-                players.append(Player(guest_account))
-        return players
-
-    def play_again(self) -> str:
-        """
-        Asks user if they would like to play again.
-        """
-        self.view.display_topbar(self.players)
-
-        for player in self.players:
-            # Kick from casino if player has 0 chips
-            if player.account.balance == 0:
-                clear_screen()
-                cprint("GAME OVER")
-                cprint("You have lost all your chips. Security is escorting you out.")
-                sys.exit()
-            if player.account.balance < self.MINIMUM_BET:
-                cprint(NO_FUNDS_MSG)
-                cinput("Press [Enter] to continue")
-                return "EXIT"
-
-            # Ask user if they would like to stay at the table
-            while True:# avoid raising error
-                cprint(STAY_AT_TABLE_PROMPT)
-                play_again: str = cinput(YES_OR_NO_PROMPT)
-
-                status: str = ""
-                if play_again.upper() in {"", "Y", "YES"}:
-                    status = "CONTINUE"
-                elif play_again.upper() in {"V", "VARIANT"}:
-                    status = "VARIANT"
-                elif play_again.upper() in {"N", "NO"}:
-                    clear_screen()
-                    cprint("\nThanks for playing!\n\n")
-                    status = "EXIT"
-                else:
-                    cprint(f"{play_again} is not a valid value.")
-                    continue
-
-                return status
-
-    @abstractmethod
-    def play_round(self):
-        """
-        Plays a single round of the Blackjack variant
-
-        Note that most Blackjack variants will execute the following steps in this exact order:
-
-        self.bet()             # Users place bets. Take placed bet amount from users
-        self.deal_cards()      # Deal cards to users
-        self.blackjack_check() # Check if players or dealer has blackjack. Offer insurance.
-        self.player_decision() # Player chooses desired moves during round
-        self.dealer_draw()     # Dealer draws once every player has busted or stands
-        self.check_win()       # Check which player has won
-        self.payout()          # Pay players who won or tied the appropriate amount
-        self.display_results() # Show who won or lost
-        """
-        pass
-
-
-    def reset(self, context = None):
-        """
-        Resets the round state without destroying player objects.
-        """
-        if context is not None:
-            self.context = context
-            self.configurations = context.config
-        self.dealer_hand = None
-        for player in self.players:
-            player.hands = []
-
-    #deal card method
-    def deal_card(self, hand: Hand, hidden: bool = False) -> None:
-        card = self.deck.draw()
-        card.hidden = hidden
-        hand.cards.append(card)
+from casino.utils import clear_screen, cprint, cinput
+from ..constants import *
+from ..hand import Hand
+from ..base import Blackjack
 
 
 class StandardBlackjack(Blackjack):
@@ -253,7 +40,7 @@ class StandardBlackjack(Blackjack):
                 elif bet > player.account.balance:
                     error_msg = f"Insufficient funds. You only have {player.account.balance} chips."
                     continue
-                
+
                 player.bet = bet
                 player.account.balance -= bet
                 player.hands = [Hand(bet=bet)]
@@ -268,7 +55,7 @@ class StandardBlackjack(Blackjack):
             for hand in player.hands:
                 self.deal_card(hand)
                 self.deal_card(hand)
-        
+
         self.dealer_hand = Hand()
         self.deal_card(self.dealer_hand)
         self.deal_card(self.dealer_hand, hidden=True)
@@ -365,7 +152,7 @@ class StandardBlackjack(Blackjack):
                         player.account.balance -= hand.bet
                         hand.bet *= 2
 
-                        self.deal_card(hand) 
+                        self.deal_card(hand)
 
                         cprint(f"💰 Doubling down! New bet: {hand.bet}")
                         cprint("Dealing your final card...")
@@ -398,15 +185,15 @@ class StandardBlackjack(Blackjack):
 
         Note that this function uses "soft 17" as a rule due to the
         implementation of calc_hand_total().
-        
+
         "Soft 17" refers to a situation where the dealer has an
         Ace and a 6.
-        In that situation, Ace = 11, which means Ace + 6 = 17. 
+        In that situation, Ace = 11, which means Ace + 6 = 17.
         Since the dealer must stand on 17, they will stand in this
         specific situation.
         """
         self.dealer_hand.reveal_all()
-        
+
         # Dealer draws cards when player has not busted or received blackjack
         dealer_can_draw = any(
             not h.is_bust and not h.is_blackjack
@@ -479,7 +266,7 @@ class StandardBlackjack(Blackjack):
         self.view.render_table(self.players, self.dealer_hand)
         cprint("=" * 40)
         cprint(" ROUND FINISHED - RESULTS AS SHOWN ABOVE ".center(45, "#"))
-        cinput("Press [Enter] to continue ... ") 
+        cinput("Press [Enter] to continue ... ")
 
     #combining the 8 steps
     def play_round(self) -> str:

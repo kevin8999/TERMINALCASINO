@@ -2,8 +2,8 @@
 from ..accounts import Account
 from ..config import Config
 from ..types import GameContext
-from ..utils import cprint, cinput, clear_screen, display_topbar, get_theme
-from .views.view import prompt_with_refresh
+from ..utils import cprint, cinput, clear_screen, display_topbar
+from .views.view import prompt_with_refresh, get_theme
 
 from .constants import (
     ACCOUNT_STARTING_BALANCE,

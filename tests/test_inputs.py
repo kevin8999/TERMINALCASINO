@@ -8,11 +8,15 @@ import pytest
 
 def test_empty_name_and_quit():
     inputs = ["","TEST","1","8","q"]
+    mock_input = Mock(side_effect=inputs)
+    mock_print = Mock()
 
-    with patch("casino.menu.main_menu.cinput",side_effect=inputs), \
+    with patch("casino.menu.main_menu.cinput", mock_input), \
+        patch("casino.menu.views.view.cinput", mock_input), \
         patch("casino.menu.main_menu.get_theme"), \
         patch("casino.menu.main_menu.Account.generate") as mock_generate, \
-        patch("casino.menu.main_menu.cprint") as mock_print, \
+        patch("casino.menu.main_menu.cprint", mock_print), \
+        patch("casino.menu.views.view.cprint", mock_print), \
         patch("casino.menu.main_menu.clear_screen"), \
         patch("casino.menu.main_menu.display_topbar"):
 
@@ -29,10 +33,12 @@ def test_interrupt():
 def test_invalid_game():
     ctx = GameContext(account=Account.generate('test', 100), config=Config.default())
     inputs = ["E","Poker","Blackjack","[1]","20","1.5","Quit","-1",KeyboardInterrupt]
-    with patch("casino.menu.main_menu.cinput",side_effect=inputs), \
-         patch("casino.menu.main_menu.cprint") as mock_print:
+    mock_print = Mock()
+    with patch("casino.menu.views.view.cinput",side_effect=inputs), \
+         patch("casino.menu.main_menu.cprint", mock_print), \
+         patch("casino.menu.views.view.cprint", mock_print):
             with pytest.raises(KeyboardInterrupt):
-                main_menu(ctx)
+                MainMenu(ctx).run()
     mock_print.assert_called_with("\nInvalid input. Please try again.\n")
     assert mock_print.call_args_list.count(call("\nInvalid input. Please try again.\n"))==len(inputs)-2
 
@@ -48,7 +54,7 @@ def test_game_handler_called(game_index, game_name):
          patch("casino.menu.main_menu.display_topbar"), \
          patch("casino.menu.main_menu.get_theme"), \
          patch("casino.menu.main_menu.cinput", return_value="q"):
-          main_menu(ctx)
+          MainMenu(ctx).run()
 
     handlers[game_name].assert_called_once()
 
